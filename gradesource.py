@@ -8,10 +8,11 @@ import utils
 
 class Gradesource:
   cookies       = None
-  loginUrl      = "https://www.gradesource.com/validate.asp"
-  assessmentUrl = "https://www.gradesource.com/editscores1.asp?id=%s"
-  courseUrl     = "https://www.gradesource.com/selectcourse.asp?id=21802"
-  postScoresUrl = "https://www.gradesource.com/updatescores1.asp"
+  rootUrl       = "https://www.gradesource.com"
+  loginUrl      = rootUrl + "/validate.asp"
+  assessmentUrl = rootUrl + "/editscores1.asp?id=%s"
+  courseUrl     = rootUrl + "/selectcourse.asp?id=21802"
+  postScoresUrl = rootUrl + "/updatescores1.asp"
   
   def __init__(self, username, passwd):
     cprint("Logging into Gradesource with username %s" % username, 'yellow')
@@ -20,21 +21,22 @@ class Gradesource:
     response = requests.post(self.loginUrl, data = postData)
     self.cookies = response.cookies
     
+    if response.status_code == 302:
+      r = requests.get(self.rootUrl + '/' + response.headers['location'], cookies = self.cookies)
+
     # TODO: raise an exception if login failed
   
   def parseScoresForm(self, assessmentId):
     url = self.assessmentUrl % assessmentId
     cprint("Downloading Gradesource page %s" % url, 'yellow')
     
-    # dirty workaround: get the course page before 
-    requests.get(self.courseUrl, cookies = self.cookies)
     html = requests.get(url, cookies = self.cookies).content
-    
+
     cprint("Parsing the form page HTML", 'yellow')
     soup = BeautifulSoup(html)
     nameToStudentId = {}
     postData = {}
-    
+
     for x in soup.form('input', id = re.compile("^student")):
       name = x.parent.parent.contents[1].string.strip("&nbsp;")
       td = x.parent.contents[1]
