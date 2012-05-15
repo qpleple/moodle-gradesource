@@ -11,12 +11,12 @@ from moodle import Moodle
 from gradesource import Gradesource
 import utils
 
-def importQuiz(moodleColumn, assessmentId):
-  moodle = Moodle('qpleple', getpass(), 155)
+def importQuiz(moodleClassID, moodleColumn, assessmentId):
+  moodle = Moodle('qpleple', getpass(), moodleClassID)
   nameToScore = moodle.quizGrades(moodleColumn)
-
-  gradesource = Gradesource('qpleple1', getpass())
   utils.check("Moodle name -> score: ", nameToScore)
+
+  gradesource = Gradesource('quentin', getpass())
   gradesource.importScores(nameToScore, assessmentId)
 
 def importParticipation(gradesource, assessmentId, date):
@@ -34,5 +34,5 @@ def importParticipation(gradesource, assessmentId, date):
 # moodle = Moodle('qpleple', getpass(), 155)
 # nameToScore = moodle.quizGrades(9)
 
-importQuiz(8, 415454)
+importQuiz(175, 5, 420001)
 # importParticipation('11-03-01', 416781)
