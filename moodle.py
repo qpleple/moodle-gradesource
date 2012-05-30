@@ -5,11 +5,11 @@ from BeautifulSoup import BeautifulSoup
 from termcolor import colored, cprint
 
 class Moodle():
-  loginUrl  = "https://csemoodle.ucsd.edu/login/index.php"
+  loginUrl      = "https://csemoodle.ucsd.edu/login/index.php"
   gradesRootUrl = "https://csemoodle.ucsd.edu/grade/report/grader/"
+  reportUrl     = "https://csemoodle.ucsd.edu/mod/quiz/report.php?id=%s&pagesize=300"
   gradesUrl = gradesRootUrl + "index.php?id=%s"
   cookies = None
-  courseId = 0
   
   def __init__(self, username, passwd):
     cprint('Logging into Moodle with username %s' % username, 'yellow')
@@ -43,9 +43,9 @@ class Moodle():
     
     return grades, otherPages
     
-  def quizGrades(self, column):
+  def quizGrades(self, column, courseId):
     # First page
-    url = self.gradesUrl % self.courseId
+    url = self.gradesUrl % courseId
     grades, otherPages = self.quizGradesFromUrl(column, url)
     print grades.keys()
     
@@ -61,4 +61,31 @@ class Moodle():
       grades.update(temp)
     
     return grades
+  
+  def quizFeedback(self, reportId, col):
+    url = self.reportUrl % reportId
+    cprint('Downloading Moodle report page %s' % url, 'yellow')
     
+    html = requests.get(url, cookies = self.cookies).content
+    
+    cprint('Parsing the HTML', 'yellow')
+    soup = BeautifulSoup(html)
+    
+    feedback = {}
+    table = soup.find("table", id="attempts")
+    for tr in table('tr', {'class': re.compile("r*")}):
+      try:
+        name = tr.find('td', 'c2').text.strip()
+        if name == 'Overall average':
+          continue
+      except Exception, e:
+        continue
+      urlFeedback = tr.find('td', 'c%s' % col).a['href']
+      content = requests.get(urlFeedback, cookies = self.cookies).content
+      soup2 = BeautifulSoup(content)
+      comment = soup2.find('div', 'answer').input['value']
+      print '%s %s' % (name, colored(comment, 'green'))
+      feedback[name] = comment
+      
+      
+    return feedback
