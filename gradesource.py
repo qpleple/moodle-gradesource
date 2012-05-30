@@ -11,7 +11,6 @@ class Gradesource:
   rootUrl       = "https://www.gradesource.com"
   loginUrl      = rootUrl + "/validate.asp"
   assessmentUrl = rootUrl + "/editscores1.asp?id=%s"
-  courseUrl     = rootUrl + "/selectcourse.asp?id=21802"
   postScoresUrl = rootUrl + "/updatescores1.asp"
   
   def __init__(self, username, passwd):
