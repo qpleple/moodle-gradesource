@@ -22,10 +22,13 @@ class Gradesource:
     self.cookies = response.cookies
     
     if response.status_code == 302:
-      r = requests.get(self.rootUrl + '/' + response.headers['location'], cookies = self.cookies)
+      location = response.headers['location']
+      if location == 'login.asp':
+        print colored(' Wrong login/password ', 'white', 'on_red')
+        sys.exit()
+      else:
+        requests.get(self.rootUrl + '/' + location, cookies = self.cookies)
 
-    # TODO: raise an exception if login failed
-  
   def parseScoresForm(self, assessmentId):
     url = self.assessmentUrl % assessmentId
     cprint("Downloading Gradesource page %s" % url, 'yellow')
