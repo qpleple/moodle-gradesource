@@ -12,8 +12,8 @@ from gradesource import Gradesource
 import utils
 
 def importQuiz(moodleClassID, moodleColumn, assessmentId):
-  moodle = Moodle('qpleple', getpass('Moodle password? '), moodleClassID)
-  nameToScore = moodle.quizGrades(moodleColumn)
+  moodle = Moodle('qpleple', getpass('Moodle password? '))
+  nameToScore = moodle.quizGrades(moodleColumn, moodleClassID)
   utils.check("Moodle name -> score: ", nameToScore)
 
   gradesource = Gradesource('quentin', getpass('Gradesource password? '))
@@ -34,5 +34,5 @@ def importParticipation(gradesource, assessmentId, date):
 # moodle = Moodle('qpleple', getpass(), 155)
 # nameToScore = moodle.quizGrades(9)
 
-importQuiz(175, 6, 420002)
+importQuiz(moodleClassID = 175, moodleColumn = 7, assessmentId = 420003)
 # importParticipation('11-03-01', 416781)
