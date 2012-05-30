@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import requests, re
+import requests, re, sys
 from BeautifulSoup import BeautifulSoup
 from termcolor import colored, cprint
 
@@ -11,14 +11,15 @@ class Moodle():
   cookies = None
   courseId = 0
   
-  def __init__(self, username, passwd, courseId):
-    self.courseId = courseId
+  def __init__(self, username, passwd):
     cprint('Logging into Moodle with username %s' % username, 'yellow')
     postData = {"username" : username, "password" : passwd}
     response = requests.post(self.loginUrl, data = postData)
     self.cookies = response.cookies
-    
-    #TODO: raise an exception if login failed
+
+    if re.search(r"Invalid login", response.text):
+        print colored(' Wrong login/password ', 'white', 'on_red')
+        sys.exit()
   
   def quizGradesFromUrl(self, col, url):
     grades = {}
