@@ -2,7 +2,7 @@
 
 from termcolor import colored, cprint
 from BeautifulSoup import BeautifulSoup
-import requests, re
+import requests, re, sys
 
 import utils
 
@@ -12,6 +12,7 @@ class Gradesource:
   loginUrl      = rootUrl + "/validate.asp"
   assessmentUrl = rootUrl + "/editscores1.asp?id=%s"
   postScoresUrl = rootUrl + "/updatescores1.asp"
+  studentsUrl   = rootUrl + "/student.asp"
   
   def __init__(self, username, passwd):
     cprint("Logging into Gradesource with username %s" % username, 'yellow')
@@ -117,3 +118,22 @@ class Gradesource:
   
     self.postScores(postData)
     cprint("Go to %s" % (self.assessmentUrl % assessmentId), 'yellow')
+  
+  def emails(self):
+    cprint("Downloading Gradesource page %s" % self.studentsUrl, 'yellow')
+    html = requests.get(self.studentsUrl, cookies = self.cookies).content
+
+    emails = {}
+
+    cprint("Parsing the page", 'yellow')
+    soup = BeautifulSoup(html)
+    tbody = soup('td', text=re.compile("Secret*"))[0].parent.parent.parent.parent
+    for tr in tbody('tr'):
+      try:
+        name  = tr.contents[1].text.strip()
+        email = tr.contents[7].text.strip()
+        emails[name] = email
+      except Exception, e:
+        continue
+    return emails
+    
