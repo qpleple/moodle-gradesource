@@ -3,9 +3,7 @@
 from moodle import Moodle
 from gradesource import Gradesource
 import utils
-import csv
 from termcolor import colored
-from csvutils import UnicodeWriter
 from getpass import getpass
 import pickle
 import smtplib
