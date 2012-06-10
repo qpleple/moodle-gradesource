@@ -3,20 +3,20 @@
 from moodle import Moodle
 from gradesource import Gradesource
 import utils
-from termcolor import colored
+from termcolor import colored, cprint
 from getpass import getpass
 import pickle
 import smtplib
 import random
 
-def getFeedback():
-  moodle = Moodle('qpleple', getpass())
-  feedback = moodle.quizFeedback(7319, 15)
-  utils.check('Feedback', feedback)
-
-  gradesource = Gradesource('quentin', getpass())
+def getFeedback(reportId, column):
+  gradesource = Gradesource('quentin', getpass('Gradesource password: '))
   emails = gradesource.emails()
   utils.check('Emails', emails)
+
+  moodle = Moodle('qpleple', getpass('Moodle password: '))
+  feedback = moodle.quizFeedback(reportId, column)
+  utils.check('Feedback', feedback)
   
   GSnames = gradesource.matchNames(feedback.keys(), emails.keys())
   
@@ -34,29 +34,37 @@ def getFeedback():
   return data
 
 def writeAnwers(feedback):
-  for name, doc in feedback.items():
-    print '%s %s %s' % (name, colored(doc['email'], 'blue'), colored(doc['feedback'], 'green'))
-    answer = raw_input().strip()
-    if answer == 'stop':
-      break
-    if answer.strip():
-      feedback[name]['answer'] = answer
+  n = len(feedback.items())
+  for i, (name, doc) in enumerate(feedback.items()):
+    fraction = "%s/%s" % (i, n)
+    print '%s %s %s %s' % (colored(fraction, 'blue'), name, colored(doc['email'], 'blue'), colored(doc['feedback'], 'green'))
+    if 'answer' in feedback[name] and feedback[name]['answer'].strip() :
+      cprint(feedback[name]['answer'], 'red')
+    else:
+      answer = raw_input().strip()
+      if answer == 'stop':
+        break
+      if answer.strip():
+        feedback[name]['answer'] = answer
   pickle.dump(feedback, open('feedback-answers.pickle', 'wb'))
 
 # writeAnwers(pickle.load(open('feedback-answers.pickle')))
 # blacklist = []
 
 def emailAnswers(feedback, blacklist = []):
-  passwd = getpass()
+  passwd = getpass('Gmail password: ')
+  do = True
   for name, doc in feedback.items():
     print colored(name, 'yellow')
-    if name in blacklist:
+    if not do or name in blacklist:
       print colored('Blacklisted', 'red')
+      if name == 'Bla bla':
+        do = True
       continue
     if not 'answer' in doc or not doc['answer'].strip():
       continue
     msg = doc['answer']
-    nl = '<br>'
+    nl = '<br>\n'
     msg += nl + nl + "Quentin"
     msg += nl + nl + "%s wrote in Moodle Quiz:" % name
     msg += nl + "> " + doc['feedback']
@@ -64,7 +72,7 @@ def emailAnswers(feedback, blacklist = []):
     sendEmailFeedback(doc['email'], name, msg, passwd)
     
 def sendEmailFeedback(to, name, msg, passwd):
-  subject = "Your Feedback #%s" % int(random.random() * 1000)
+  subject = "Your Feedback #%s" % int(random.random() * 10000)
   sender  = "qpleple@ucsd.edu"
   body    = '' + msg.encode('utf8', 'ignore').decode('utf8', 'ignore').encode('ascii', 'ignore') + ''
   headers = ["From: Quentin Pleple <%s>" % sender,
