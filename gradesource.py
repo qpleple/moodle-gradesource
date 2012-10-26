@@ -41,7 +41,7 @@ class Gradesource:
     postData = {}
 
     for x in soup.form('input', id = re.compile("^student")):
-      name = x.parent.parent.contents[1].string.strip("&nbsp;")
+      name = x.parent.parent.contents[1].string.replace("&nbsp;", "")
       td = x.parent.contents[1]
       postData[td['name']] = td['value']
       nameToStudentId[name] = x['id']
@@ -64,7 +64,7 @@ class Gradesource:
       subNames = n
       subNames = subNames.replace('-', ' ').replace(',', ' ').lower().split(' ')
       subNames.sort()
-      externalDict[" ".join(subNames)] = n
+      externalDict[" ".join(subNames).strip()] = n
   
     # GsDict:
     # "alphonse blah jean",
@@ -109,7 +109,7 @@ class Gradesource:
   def importScores(self, scores, assessmentId):
     GsNameToStudentId, postData = self.parseScoresForm(assessmentId)
     utils.check("Gradesource name -> studentId: ", GsNameToStudentId)
-  
+    
     ExtNameToGsName = self.matchNames(scores.keys(), GsNameToStudentId.keys())
   
     for extName, GsName in ExtNameToGsName.items():
@@ -132,6 +132,8 @@ class Gradesource:
       try:
         name  = tr.contents[1].text.strip()
         email = tr.contents[7].text.strip()
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+          raise
         emails[name] = email
       except Exception, e:
         continue
