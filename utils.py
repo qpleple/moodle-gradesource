@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from termcolor import colored, cprint
+import pickle
 
 def editDist(s1, s2):
     d = {}
@@ -36,3 +37,17 @@ def powerset(s):
 def check(label, toDisplay):
   print colored(label, 'yellow') + str(toDisplay)
   raw_input(colored('continue ? ', 'green'))
+
+def setConfig():
+  config = {}
+  config['moodleCourseId']    = int(raw_input('Moodle class id: '))
+  config['moodleLogin']       = raw_input('Moodle login: ')
+  config['moodlePasswd']      = raw_input('Moodle password: ')
+  config['gradesourceLogin']  = raw_input('Gradesource login: ')
+  config['gradesourcePasswd'] = raw_input('Gradeource password: ')
+
+  pickle.dump(config, open('config.pickle', 'wb'))
+  cprint('Saved!', 'green')
+
+def getConfig():
+  return pickle.load(open('config.pickle', 'rb'))
