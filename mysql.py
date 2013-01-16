@@ -11,9 +11,10 @@ def importNames():
     cursor = conn.cursor()
 
     for (gs_name, email) in g.emails().items():
-        print "%s, %s" % (gs_name, email)
+        # print "%s, %s" % (gs_name, email)
         cursor.execute("SELECT id FROM students WHERE email = '%s'" % email)
         if cursor.fetchone() == None:
+            print "%s, %s" % (gs_name, email)
             sql = "INSERT INTO students (gs_name, email, class) VALUES ('%s', '%s', '101')" % (gs_name, email)
             cursor.execute(sql)
 
@@ -68,6 +69,7 @@ def syncAssignment(gradesourceId, taId):
              FROM scores sc
              LEFT JOIN students st ON st.id = sc.student_id
              WHERE assignment_id = '%s'
+             AND st.dropped = 0
              """ % taId
     cursor.execute(sql)
 
@@ -80,15 +82,15 @@ def syncAssignment(gradesourceId, taId):
         scores[row['gs_name']] = row['score']
 
     g = Gradesource('qpleple', getpass())
-    g.importScores(scores, gradesourceId)
+    g.importScores(scores, gradesourceId, gradesourceName = True)
 
     cursor.close()
     conn.commit()
     conn.close()
 
-# syncAssignment(gradesourceId = 435682, taId = 2)
+syncAssignment(gradesourceId = 432537, taId = 9)
 
-
+# importNames()
 
 
 
