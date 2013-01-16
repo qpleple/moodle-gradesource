@@ -7,12 +7,13 @@ import requests, re, sys
 import utils
 
 class Gradesource:
-  cookies       = None
-  rootUrl       = "https://www.gradesource.com"
-  loginUrl      = rootUrl + "/validate.asp"
-  assessmentUrl = rootUrl + "/editscores1.asp?id=%s"
-  postScoresUrl = rootUrl + "/updatescores1.asp"
-  studentsUrl   = rootUrl + "/student.asp"
+  cookies        = None
+  rootUrl        = "https://www.gradesource.com"
+  loginUrl       = rootUrl + "/validate.asp"
+  assessmentUrl  = rootUrl + "/editscores1.asp?id=%s"
+  postScoresUrl  = rootUrl + "/updatescores1.asp"
+  studentsUrl    = rootUrl + "/student.asp"
+  assessmentsUrl = rootUrl + "/assessment.asp"
   
   def __init__(self, username, passwd):
     cprint("Logging into Gradesource with username %s" % username, 'yellow')
@@ -112,7 +113,10 @@ class Gradesource:
     cprint("Posting data", 'yellow')
     requests.post(self.postScoresUrl, data = postData, cookies = self.cookies)
     
-  def importScores(self, scores, assessmentId, exactGradesourceNames = False):
+  def importScoresByNames(self, scores, assessmentId = 0, exactGradesourceNames = False):
+    if assessmentId == 0:
+      assessmentId = self.chooseAssessment()
+
     GsNameToStudentId, postData = self.parseScoresForm(assessmentId)
     utils.check("Gradesource name -> studentId: ", GsNameToStudentId)
     
@@ -155,3 +159,31 @@ class Gradesource:
       except Exception, e:
         continue
     return emails
+
+  def getAssessments(self):
+    cprint("Downloading Gradesource page %s" % self.assessmentsUrl, 'yellow')
+    html = requests.get(self.assessmentsUrl, cookies = self.cookies).content
+
+    cprint("Parsing the page", 'yellow')
+    soup = BeautifulSoup(html)
+    table = soup('td', {'class': 'T'})[0].parent.parent
+
+    assessments = {}
+    for tr in table('tr')[1:-1]:
+      title = tr.contents[1].text.strip()
+      href = tr.a['href'] # eg: href="editassessment.asp?id=441406"
+      # match the number
+      i = re.match(r"[^\d]*(\d+)", href).group(1)
+      assessments[title] = i
+
+    return assessments
+
+  def chooseAssessment(self):
+    assessments = self.getAssessments()
+    keys = sorted(assessments.keys())
+    for i, ass in enumerate(keys):
+      print colored(i, 'green') + ' %s (%s)' % (ass, assessments[ass])
+
+    i = int(raw_input(colored('choice ? ', 'green')))
+    
+    return assessments[keys[i]]
