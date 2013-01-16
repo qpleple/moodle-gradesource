@@ -83,37 +83,54 @@ class Gradesource:
       for possibility in utils.powerset(subNames):
         if len(possibility) > 1:
           GsDict[" ".join(possibility)] = n
-  
+
     format = "%3s %25s - %-25s (%s)"
     cprint(format % ("#", "External name", "Gradesource name", "distance"), 'yellow')
     for i, externalCleaned in enumerate(externalDict):
-      dist, GsCleaned = min([(utils.editDist(externalCleaned, x), x) for x in GsDict.keys()])
+      if externalCleaned in GsDict:
+        dist = 0
+        GsCleaned = externalCleaned
+      else:
+        dist, GsCleaned = min([(utils.editDist(externalCleaned, x), x) for x in GsDict.keys()])
+
+      if dist == 0:
+        mapping[externalDict[externalCleaned]] = GsDict[GsCleaned]
+        
+        for possibility in utils.powerset(GsCleaned.split(' ')):
+          if len(possibility) > 1:
+            del GsDict[' '.join(possibility)]
+
       if dist == 0:
         color = 'white'
-      elif dist <= 2:
-        color = 'yellow'
       else:
         color = 'red'
+
       cprint(format % (i + 1, externalCleaned, GsCleaned, str(dist)), color)
-      mapping[externalDict[externalCleaned]] = GsDict[GsCleaned]
-      
-      for possibility in utils.powerset(GsCleaned.split(' ')):
-        if len(possibility) > 1:
-          del GsDict[' '.join(possibility)]
     return mapping
   
   def postScores(self, postData):
     cprint("Posting data", 'yellow')
     requests.post(self.postScoresUrl, data = postData, cookies = self.cookies)
     
-  def importScores(self, scores, assessmentId):
+  def importScores(self, scores, assessmentId, exactGradesourceNames = False):
     GsNameToStudentId, postData = self.parseScoresForm(assessmentId)
     utils.check("Gradesource name -> studentId: ", GsNameToStudentId)
     
-    ExtNameToGsName = self.matchNames(scores.keys(), GsNameToStudentId.keys())
+    errors = False
+    if not exactGradesourceNames:
+      ExtNameToGsName = self.matchNames(scores.keys(), GsNameToStudentId.keys())
   
-    for extName, GsName in ExtNameToGsName.items():
-      postData[GsNameToStudentId[GsName]] = scores[extName]
+      for extName, GsName in ExtNameToGsName.items():
+        postData[GsNameToStudentId[GsName]] = scores[extName]
+    else:
+      for GsName, score in scores.items():
+        if GsName in GsNameToStudentId:
+          postData[GsNameToStudentId[GsName]] = score
+        else:
+          cprint('Missing name: ' + GsName, 'white', 'on_red')
+          errors = True
+    if errors:
+      sys.exit()
     utils.check("Data to post: ", postData)
   
     self.postScores(postData)
@@ -138,4 +155,3 @@ class Gradesource:
       except Exception, e:
         continue
     return emails
-    

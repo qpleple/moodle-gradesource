@@ -2,7 +2,7 @@
 
 # install: requests, beautifulsoup4, termcolor
 
-import re, sys
+import re, sys, csv, pickle
 from getpass import getpass
 from BeautifulSoup import BeautifulSoup
 from termcolor import colored, cprint
@@ -11,12 +11,16 @@ from moodle import Moodle
 from gradesource import Gradesource
 import utils
 
+def passwd(service):
+  data = pickle.load(open('passwd.pickle', 'rb'))
+  return data[service]
+
 def importQuiz(moodleClassID, moodleColumn, assessmentId):
-  moodle = Moodle('qpleple', getpass('Moodle password? '))
+  moodle = Moodle('qpleple', passwd('moodle'))
   nameToScore = moodle.quizGrades(moodleColumn, moodleClassID)
   utils.check("Moodle name -> score: ", nameToScore)
 
-  gradesource = Gradesource('quentin', getpass('Gradesource password? '))
+  gradesource = Gradesource('qpleple20', passwd('gradesource'))
   gradesource.importScores(nameToScore, assessmentId)
 
 def importParticipation(gradesource, assessmentId, date):
@@ -27,12 +31,16 @@ def importParticipation(gradesource, assessmentId, date):
   nameToScore = dict([(name, 1) for name in names])
   utils.check("Nname to score: ", nameToScore)
   
-  gradesource = Gradesource('quentin', getpass('Gradesource password? '))
+  gradesource = Gradesource('qpleple20', passwd('gradesource'))
   gradesource.importScores(nameToScore, assessmentId)
-  
 
-# moodle = Moodle('qpleple', getpass(), 155)
-# nameToScore = moodle.quizGrades(9)
+def importClickerScores(csvPath, col, assessmentId):
+  g = Gradesource('qpleple20', passwd('gradesource'))
+  reader = csv.reader(open(csvPath, 'rU'), delimiter=',')
+  scores = dict([(row[0] + ' ' + row[1], row[col]) for row in list(reader)])
+  g.importScores(scores, assessmentId)
 
-importQuiz(moodleClassID = 175, moodleColumn = 7, assessmentId = 420003)
+# Examples:
+# importQuiz(moodleClassID = 175, moodleColumn = 7, assessmentId = 420003)
 # importParticipation('11-03-01', 416781)
+# importClickerScores("/Users/qt/Desktop/shachar.csv", 420003)
