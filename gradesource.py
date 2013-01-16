@@ -140,26 +140,43 @@ class Gradesource:
     self.postScores(postData)
     cprint("Go to %s" % (self.assessmentUrl % assessmentId), 'yellow')
 
-  def importScoresByEmails(self, emailsToScore, assessmentId = 0):
-    if assessmentId == 0:
-      assessmentId = self.chooseAssessment()
+  def importScoresBy(self, data, key):
+    """
+    data should be a list of dictionnaries with at least key 'score' and another one
+    [{'name': 'Quentin Pleple', 'pid': 'A53010752', 'score': '10', ...}, ...]
+    and key should be in ['name', 'email', 'pid']
+    """
+    if key not in ['name', 'email', 'pid']:
+      cprint('Bad key: ' + key, 'white', 'on_red')
+      sys.exit()
 
+    assessmentId = self.chooseAssessment()
     nameToStudentId, postData = self.parseScoresForm(assessmentId)
     utils.check("Gradesource name -> studentId: ", nameToStudentId)
     
-    emailsToName = dict((v,k) for k, v in self.emails().iteritems())
+    # infos = ['Pleple, Quentin': {'email': 'qpleple@ucsd.edu', 'pid': 'A53010752'}, ...]
+    # identification = {
+    # 'pleple, quentin':  'Pleple, Quentin',
+    # 'qpleple@ucsd.edu': 'Pleple, Quentin',
+    # 'a53010752':        'Pleple, Quentin',
+    # ...}
+    identification = {}
+    for name, infos in self.studentsInfo().items():
+      identification[name.lower()] = name
+      identification[infos['email'].lower()] = name
+      identification[infos['pid'].lower()] = name
 
     errors = False
-    for email, row in emailsToScore.items():
-      if email not in emailsToName:
-        cprint('Email not in Gradesource: %s (%s)' % (email, row['name']) , 'white', 'on_red')
+    for row in data:
+      if row[key].lower() not in identification:
+        cprint("Couldn't find: %s (%s)" % (row[key], row) , 'white', 'on_red')
         errors = True
         continue
       
-      name = emailsToName[email]
+      name = identification[row[key].lower()]
 
       if name not in nameToStudentId:
-        cprint('Missing name: ' + name, 'white', 'on_red')
+        cprint('Missing name in Gradesource assessment form: ' + name, 'white', 'on_red')
         errors = True
 
       postData[nameToStudentId[name]] = row['score']
@@ -172,25 +189,29 @@ class Gradesource:
     self.postScores(postData)
     cprint("Go to %s" % (self.assessmentUrl % assessmentId), 'yellow')
   
-  def emails(self):
+  def studentsInfo(self):
+    """
+    Return format:
+    ['Pleple, Quentin': {'email': 'qpleple@ucsd.edu', 'pid': 'A53010752'}, ...]
+    """
     cprint("Downloading Gradesource page %s" % self.studentsUrl, 'yellow')
     html = requests.get(self.studentsUrl, cookies = self.cookies).content
 
-    emails = {}
+    infos = {}
 
     cprint("Parsing the page", 'yellow')
     soup = BeautifulSoup(html)
-    tbody = soup('td', text=re.compile("Secret*"))[0].parent.parent.parent.parent
-    for tr in tbody('tr'):
-      try:
-        name  = tr.contents[1].text.strip()
-        email = tr.contents[7].text.strip()
-        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-          raise
-        emails[name] = email
-      except Exception, e:
+    tbody = soup('td', text=re.compile("Secret*"))[0].parent.parent.parent.parent.parent
+    for tr in tbody('tr')[2:-1]:
+      name  = tr.contents[1].text.strip()
+      pid   = tr.contents[3].text.strip()
+      email = tr.contents[7].text.strip()
+      if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
         continue
-    return emails
+      
+      infos[name] = {'email': email, 'pid': pid}
+
+    return infos
 
   def getAssessments(self):
     cprint("Downloading Gradesource page %s" % self.assessmentsUrl, 'yellow')

@@ -16,12 +16,13 @@ def importQuiz():
 
   m = Moodle(config['moodleLogin'], config['moodlePasswd'])
   _, scores = m.getScores(config['moodleCourseId'])
-  # Fields: 0:FN, 1:LN, 2:id, 3:inst, 4:dpt, 5:email, 6:total, 7:score
-  emailsToScore = dict([(row[5], {'score': row[7], 'name': '%s, %s' % (row[1], row[0])}) for row in scores])
-  utils.check("Moodle name -> score: ", emailsToScore)
+  # Fields: 0:FN, 1:LN, 2:pid, 3:inst, 4:dpt, 5:email, 6:total, 7:score
+  data = [{'name': '%s, %s' % (row[1], row[0]), 'score': row[7], 'pid': row[2], 'email': row[5]} for row in scores]
+  
+  utils.check("Moodle data: ", data)
 
   g = Gradesource(config['gradesourceLogin'], config['gradesourcePasswd'])
-  g.importScoresByEmails(emailsToScore)
+  g.importScoresBy(data, 'pid')
 
 def importParticipation(date):
   config = utils.getConfig()
@@ -41,14 +42,14 @@ def importClickerScores(csvPath, col):
 
   reader = csv.reader(open(csvPath, 'rU'), delimiter=',')
   # Fields: 0:LN, 1:FN, 2:id, >2:scores
-  nameToScore = dict([(row[0] + ' ' + row[1], row[col]) for row in list(reader)])
-  utils.check("Clicker name -> score: ", nameToScore)
+  data = [{'name': '%s, %s' % (row[0], row[1]), 'score': row[col], 'pid': row[2]} for row in reader]
+  utils.check("Clicker data: ", data)
 
   g = Gradesource(config['gradesourceLogin'], config['gradesourcePasswd'])
-  g.importScoresByNames(nameToScore)
+  g.importScoresBy(data, 'pid')
 
 # Examples:
 # utils.setConfig()
 # importQuiz()
 # importParticipation('11-03-01')
-# importClickerScores("/Users/qt/Desktop/shachar.csv", 2)
+# importClickerScores("/Users/qt/Desktop/shachar.csv", 4)
