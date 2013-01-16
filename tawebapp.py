@@ -1,26 +1,22 @@
-import MySQLdb, re
-from getpass import getpass
+import MySQLdb, re, utils, torndb
 from gradesource import Gradesource
 from BeautifulSoup import BeautifulSoup
 from termcolor import *
 
-def importNames():
-    g = Gradesource('qpleple', getpass())
-
-    conn = MySQLdb.connect(host = "localhost", user = "root", passwd = "root", db = "ta")
-    cursor = conn.cursor()
-
-    for (gs_name, email) in g.emails().items():
-        # print "%s, %s" % (gs_name, email)
-        cursor.execute("SELECT id FROM students WHERE email = '%s'" % email)
-        if cursor.fetchone() == None:
-            print "%s, %s" % (gs_name, email)
-            sql = "INSERT INTO students (gs_name, email, class) VALUES ('%s', '%s', '101')" % (gs_name, email)
-            cursor.execute(sql)
-
-    cursor.close()
-    conn.commit()
-    conn.close()
+def importGradesourceNamesInMySQL(mysqlClassId):
+  config = utils.getConfig()
+  g = Gradesource(config['gradesourceLogin'], config['gradesourcePasswd'])
+  infos = g.studentsInfo()
+  
+  db = torndb.Connection("localhost", "ta", user = "root", password = "root")
+  for name, info in infos.items():
+    sql = "SELECT id FROM students WHERE gs_name = %s AND pid = %s AND email = %s"
+    if not db.get(sql, name, info['pid'], info['email']):
+      sql = "INSERT INTO students (gs_name, pid, email, class_id) VALUES (%s, %s, %s, %s)"
+      db.execute(sql, name, info['pid'], info['email'], mysqlClassId)
+      cprint("%s not found, inserting" % name, 'green')
+    else:
+      print "%s found, doing nothing" % name
 
 def importPictureIds():
     conn = MySQLdb.connect(host = "localhost", user = "root", passwd = "root", db = "ta")
@@ -88,12 +84,4 @@ def syncAssignment(gradesourceId, taId):
     conn.commit()
     conn.close()
 
-syncAssignment(gradesourceId = 432537, taId = 9)
-
-# importNames()
-
-
-
-
-
-
+importGradesourceNamesInMySQL(2)
