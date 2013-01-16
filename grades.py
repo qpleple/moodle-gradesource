@@ -17,12 +17,11 @@ def importQuiz():
   m = Moodle(config['moodleLogin'], config['moodlePasswd'])
   _, scores = m.getScores(config['moodleCourseId'])
   # Fields: 0:FN, 1:LN, 2:id, 3:inst, 4:dpt, 5:email, 6:total, 7:score
-
-  nameToScore = dict([(row[0] + ' ' + row[1], row[7]) for row in scores])
-  utils.check("Moodle name -> score: ", nameToScore)
+  emailsToScore = dict([(row[5], {'score': row[7], 'name': '%s, %s' % (row[1], row[0])}) for row in scores])
+  utils.check("Moodle name -> score: ", emailsToScore)
 
   g = Gradesource(config['gradesourceLogin'], config['gradesourcePasswd'])
-  g.importScoresByNames(nameToScore)
+  g.importScoresByEmails(emailsToScore)
 
 def importParticipation(date):
   config = utils.getConfig()
@@ -41,6 +40,7 @@ def importClickerScores(csvPath, col):
   config = utils.getConfig()
 
   reader = csv.reader(open(csvPath, 'rU'), delimiter=',')
+  # Fields: 0:LN, 1:FN, 2:id, >2:scores
   nameToScore = dict([(row[0] + ' ' + row[1], row[col]) for row in list(reader)])
   utils.check("Clicker name -> score: ", nameToScore)
 

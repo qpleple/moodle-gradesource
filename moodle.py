@@ -74,6 +74,6 @@ class Moodle():
     i = int(raw_input(colored('choice ? ', 'green')))
 
     header = [x for j, x in enumerate(header) if j <= 6 or j - 7 == i]
-    scores = [[x for j, x in enumerate(row) if j <= 6 or j - 7 == i] for row in scores]
+    scores = [[x for j, x in enumerate(row) if (j <= 6 or j - 7 == i)] for row in scores if row[i + 7] != '-']
 
     return header, scores

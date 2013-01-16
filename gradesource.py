@@ -139,6 +139,38 @@ class Gradesource:
   
     self.postScores(postData)
     cprint("Go to %s" % (self.assessmentUrl % assessmentId), 'yellow')
+
+  def importScoresByEmails(self, emailsToScore, assessmentId = 0):
+    if assessmentId == 0:
+      assessmentId = self.chooseAssessment()
+
+    nameToStudentId, postData = self.parseScoresForm(assessmentId)
+    utils.check("Gradesource name -> studentId: ", nameToStudentId)
+    
+    emailsToName = dict((v,k) for k, v in self.emails().iteritems())
+
+    errors = False
+    for email, row in emailsToScore.items():
+      if email not in emailsToName:
+        cprint('Email not in Gradesource: %s (%s)' % (email, row['name']) , 'white', 'on_red')
+        errors = True
+        continue
+      
+      name = emailsToName[email]
+
+      if name not in nameToStudentId:
+        cprint('Missing name: ' + name, 'white', 'on_red')
+        errors = True
+
+      postData[nameToStudentId[name]] = row['score']
+
+    if errors:
+      raw_input(colored('Found some errors, continue anyway ? ', 'green'))      
+
+    utils.check("Data to post: ", postData)
+  
+    self.postScores(postData)
+    cprint("Go to %s" % (self.assessmentUrl % assessmentId), 'yellow')
   
   def emails(self):
     cprint("Downloading Gradesource page %s" % self.studentsUrl, 'yellow')
