@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import requests, re, sys
+import requests, re, sys, csv
 from BeautifulSoup import BeautifulSoup
 from termcolor import colored, cprint
 
@@ -8,6 +8,7 @@ class Moodle():
   loginUrl      = "https://csemoodle.ucsd.edu/login/index.php"
   gradesRootUrl = "https://csemoodle.ucsd.edu/grade/report/grader/"
   reportUrl     = "https://csemoodle.ucsd.edu/mod/quiz/report.php?id=%s&pagesize=300"
+  exportUrl     = "https://csemoodle.ucsd.edu/grade/export/txt/export.php"
   gradesUrl = gradesRootUrl + "index.php?id=%s"
   cookies = None
   
@@ -20,47 +21,6 @@ class Moodle():
     if re.search(r"Invalid login", response.text):
         print colored(' Wrong login/password ', 'white', 'on_red')
         sys.exit()
-  
-  def quizGradesFromUrl(self, col, url):
-    grades = {}
-
-    cprint('Downloading Moodle grade page %s' % url, 'yellow')
-    html = requests.get(url, cookies = self.cookies).content
-    
-    cprint('Parsing the HTML for column %s' % col, 'yellow')
-    soup = BeautifulSoup(html)
-    table = soup.find('table', id = "user-grades")
-  
-    for tr in table('tr', {'class' : re.compile('^r')}):
-      name = tr.th.contents[1].string.strip()
-      scoreTd = tr.find('td', {'class' : re.compile('c%s' % col)})
-      scoreStr = scoreTd.span.string
-      if scoreStr != "-":
-        grades[name] = int(float(scoreStr))
-    
-    paging = soup.find('div', {'class' : 'paging'})
-    otherPages = [a['href'] for a in paging('a') if re.match('\d', a.text)]
-    
-    return grades, otherPages
-    
-  def quizGrades(self, column, courseId):
-    # First page
-    url = self.gradesUrl % courseId
-    grades, otherPages = self.quizGradesFromUrl(column, url)
-    print grades.keys()
-    
-    # Other pages
-    cprint('Other pages:', 'yellow')
-    for otherPage in otherPages:
-      cprint('* %s' % otherPage, 'yellow')
-      
-    for otherPage in otherPages:
-      url = self.gradesRootUrl + otherPage
-      temp, _ = self.quizGradesFromUrl(column, url)
-      print temp.keys()
-      grades.update(temp)
-    
-    return grades
   
   def quizFeedback(self, reportId, col):
     url = self.reportUrl % reportId
@@ -89,3 +49,31 @@ class Moodle():
       
       
     return feedback
+
+  def getAllScores(self, courseId):
+    """
+      Call the export functionnality and returns (header, scores) with:
+      header = ['First Name', 'Surname', ...]
+      scores [['Quentin', 'Pleple', ...], ...]
+      Fields: 0:FN, 1:LN, 2:id, 3:inst, 4:dpt, 5:email, 6:total, >6:all scores
+    """
+    url = self.exportUrl
+    payload = {'id': courseId, 'itemids': '', 'separator': 'tab'}
+
+    txt = requests.get(url, params = payload, cookies = self.cookies).content
+    data = [row for row in csv.reader(txt.splitlines(), delimiter = '\t')]
+    return data[0], data[1:]
+
+  def getScores(self, courseId):
+    """Like getAllScores() but for only one assignement"""
+
+    header, scores = self.getAllScores(courseId)
+    for i, title in enumerate(header[7:]):
+      print colored(i, 'green') + ' ' + title
+
+    i = int(raw_input(colored('choice ? ', 'green')))
+
+    header = [x for j, x in enumerate(header) if j <= 6 or j - 7 == i]
+    scores = [[x for j, x in enumerate(row) if j <= 6 or j - 7 == i] for row in scores]
+
+    return header, scores
