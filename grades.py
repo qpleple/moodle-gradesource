@@ -11,7 +11,7 @@ from moodle import Moodle
 from gradesource import Gradesource
 import utils
 
-def importQuiz():
+def uploadMoodleQuizScores():
   config = utils.getConfig()
 
   m = Moodle(config['moodleLogin'], config['moodlePasswd'])
@@ -24,20 +24,7 @@ def importQuiz():
   g = Gradesource(config['gradesourceLogin'], config['gradesourcePasswd'])
   g.importScoresBy(data, 'pid')
 
-def importParticipation(date):
-  config = utils.getConfig()
-
-  filename = "participation/participation-%s.txt" % date
-  cprint('Reading names from file %s' % filename, 'yellow')
-  names = eval(open(filename).read())
-  
-  nameToScore = dict([(name, 1) for name in names])
-  utils.check("Nname to score: ", nameToScore)
-  
-  g = Gradesource(config['gradesourceLogin'], config['gradesourcePasswd'])
-  g.importScoresByNames(nameToScore)
-
-def importClickerScores(csvPath, col):
+def uploadClickerScores(csvPath, col):
   config = utils.getConfig()
 
   reader = csv.reader(open(csvPath, 'rU'), delimiter=',')
@@ -48,8 +35,8 @@ def importClickerScores(csvPath, col):
   g = Gradesource(config['gradesourceLogin'], config['gradesourcePasswd'])
   g.importScoresBy(data, 'pid')
 
+
 # Examples:
 # utils.setConfig()
-# importQuiz()
-# importParticipation('11-03-01')
-# importClickerScores("/Users/qt/Desktop/shachar.csv", 4)
+# uploadMoodleQuizScores()
+# uploadClickerScores("/Users/qt/Desktop/shachar.csv", 4)
