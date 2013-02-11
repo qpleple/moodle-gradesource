@@ -168,12 +168,13 @@ class Gradesource:
 
     errors = False
     for row in data:
-      if row[key].lower() not in identification:
+      needle = row[key].lower().strip()
+      if needle not in identification:
         cprint("Couldn't find: %s (%s)" % (row[key], row) , 'white', 'on_red')
         errors = True
         continue
       
-      name = identification[row[key].lower()]
+      name = identification[needle]
 
       if name not in nameToStudentId:
         cprint('Missing name in Gradesource assessment form: ' + name, 'white', 'on_red')
