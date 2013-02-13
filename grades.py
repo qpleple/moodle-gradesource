@@ -44,7 +44,6 @@ def temp(csvPath, col):
   g = Gradesource(config['gradesourceLogin'], config['gradesourcePasswd'])
   g.importScoresBy(data, 'pid')
 
-temp()
 
 # Examples:
 # utils.setConfig()
