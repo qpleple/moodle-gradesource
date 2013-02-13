@@ -15,11 +15,12 @@ lines = [l for l in lines[1:] if l[0][0] != '#']
 # Ask for the column to pick in theh file
 for col, title in enumerate(first_line):
   print colored(col, 'green') + ' ' + title
-col = int(raw_input(colored('choice ? ', 'green')))
+pid_col   = int(raw_input(colored('PID column ? ', 'green')))
+score_col = int(raw_input(colored('Score column ? ', 'green')))
 
 # Keep only lines with non-zero score
-lines = [l for l in lines if l[col] not in [0, '0', '-', '']]
-data  = [{'name': "{0[0]}, {0[1]}".format(l), 'score': l[col], 'pid': l[2]} for l in lines]
+lines = [l for l in lines if l[score_col] not in [0, '0', '-', '']]
+data  = [{'score': l[score_col], 'pid': l[pid_col]} for l in lines]
 
 # Ask for the assessment to upload the grade
 config = utils.getConfig()
